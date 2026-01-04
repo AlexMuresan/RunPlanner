@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gps-planner-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - gps-planner-network
+    depends_on:
+      - osrm
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gps-planner-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - gps-planner-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  osrm:
+    image: osrm/osrm-backend
+    platform: linux/amd64
+    container_name: gps-planner-osrm
+    volumes:
+      - ./osrm-data:/data
+    command: osrm-routed --algorithm mld /data/map.osrm
+    ports:
+      - "5005:5000"
+    networks:
+      - gps-planner-network
+    restart: unless-stopped
+
+networks:
+  gps-planner-network:
+    driver: bridge
+
+volumes:
+  db-data:

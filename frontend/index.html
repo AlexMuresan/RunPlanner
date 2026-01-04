@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Route Planner</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-80 bg-white shadow-lg overflow-y-auto">
+            <div class="p-4">
+                <h1 class="text-2xl font-bold text-gray-800 mb-4">GPS Route Planner</h1>
+
+                <!-- Route Form -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-3">Create New Route</h2>
+                    <input
+                        type="text"
+                        id="routeName"
+                        placeholder="Route name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <textarea
+                        id="routeDescription"
+                        placeholder="Description (optional)"
+                        rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+
+                    <!-- Routing Mode Toggle -->
+                    <div class="mb-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="autoRouting" class="form-checkbox h-5 w-5 text-blue-600">
+                            <span class="text-sm font-medium">Auto-routing (follow paths)</span>
+                        </label>
+                    </div>
+
+                    <!-- Routing Profile Selection -->
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium mb-1">Routing Profile:</label>
+                        <select id="routingProfile" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="foot">Running/Walking (footpaths, trails)</option>
+                            <option value="driving">Driving (roads only)</option>
+                            <option value="cycling">Cycling (bike paths, roads)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2 mb-2">
+                        <button
+                            id="saveRoute"
+                            class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                        >
+                            Save Route
+                        </button>
+                        <button
+                            id="clearRoute"
+                            class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <button
+                        id="loopRoute"
+                        class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition"
+                    >
+                        Close Loop (connect back to start)
+                    </button>
+                </div>
+
+                <!-- Waypoints List -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-3">Waypoints</h2>
+                    <div id="waypointsList" class="space-y-2 max-h-48 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">Click on the map to add waypoints</p>
+                    </div>
+                </div>
+
+                <!-- Distance Display -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-3">Distance</h2>
+                    <div id="distanceDisplay" class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="font-medium">Miles:</span>
+                            <span id="distanceMiles" class="text-gray-600">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="font-medium">Kilometers:</span>
+                            <span id="distanceKm" class="text-gray-600">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Buttons -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-3">Export</h2>
+                    <div class="flex gap-2">
+                        <button
+                            id="exportTrack"
+                            class="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+                            disabled
+                        >
+                            GPX Track
+                        </button>
+                        <button
+                            id="exportRoute"
+                            class="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+                            disabled
+                        >
+                            GPX Route
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Saved Routes List -->
+                <div>
+                    <h2 class="text-lg font-semibold mb-3">Saved Routes</h2>
+                    <div id="savedRoutesList" class="space-y-2">
+                        <p class="text-gray-500 text-sm">No saved routes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="flex-1 relative">
+            <div id="map" class="w-full h-full"></div>
+            <div id="loadingIndicator" class="hidden absolute top-4 right-4 bg-white px-4 py-2 rounded-md shadow-lg">
+                <span class="text-sm font-medium">Calculating route...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Custom JS -->
+    <script src="/static/js/api.js?v=2"></script>
+    <script src="/static/js/map.js?v=2"></script>
+    <script src="/static/js/route-manager.js?v=2"></script>
+</body>
+</html>

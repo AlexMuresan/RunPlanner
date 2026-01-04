@@ -7,6 +7,8 @@ class MapManager {
         this.autoRouting = false;
         this.routingProfile = 'foot'; // default to foot for running/walking
         this.totalDistance = 0; // in meters
+        this.userLocationMarker = null;
+        this.lastKnownPosition = null; // Cache last known position
         this.init();
     }
 
@@ -19,6 +21,198 @@ class MapManager {
         }).addTo(this.map);
 
         this.map.on('click', (e) => this.handleMapClick(e));
+
+        // Add geolocation button listener
+        document.getElementById('geolocateBtn').addEventListener('click', () => this.showUserLocation());
+
+        // Add region detection button listener
+        document.getElementById('detectRegionBtn').addEventListener('click', () => this.detectAndSuggestRegion());
+
+        // Modal close button
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('regionSetupModal').classList.add('hidden');
+        });
+
+        // Copy command button
+        document.getElementById('copyCommand').addEventListener('click', () => {
+            const command = document.getElementById('setupCommand').textContent;
+            navigator.clipboard.writeText(command).then(() => {
+                const btn = document.getElementById('copyCommand');
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = 'Copy Command', 2000);
+            });
+        });
+    }
+
+    detectAndSuggestRegion() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const btn = document.getElementById('detectRegionBtn');
+        btn.disabled = true;
+        btn.textContent = 'Detecting location...';
+
+        const options = {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 30000
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Show modal
+                document.getElementById('regionSetupModal').classList.remove('hidden');
+
+                // Get location name using reverse geocoding
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                    const data = await response.json();
+                    const locationName = data.address.city || data.address.town || data.address.county || data.address.state || 'Unknown';
+                    document.getElementById('detectedLocation').textContent = `${locationName}, ${data.address.country}`;
+
+                    // Suggest region based on location
+                    const region = this.suggestRegion(lat, lng, data.address);
+                    document.getElementById('suggestedRegion').textContent = region.name;
+                    document.getElementById('setupCommand').textContent = './setup-osrm.sh';
+
+                } catch (error) {
+                    console.error('Reverse geocoding failed:', error);
+                    document.getElementById('detectedLocation').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    document.getElementById('suggestedRegion').textContent = 'Unable to detect - please select manually';
+                }
+
+                btn.disabled = false;
+                btn.textContent = '📍 Setup Map Data for My Location';
+            },
+            (error) => {
+                btn.disabled = false;
+                btn.textContent = '📍 Setup Map Data for My Location';
+
+                let message = 'Unable to get your location to suggest a region.';
+                if (error.code === error.POSITION_UNAVAILABLE) {
+                    message += '\n\nPlease ensure location services are enabled in your system settings.';
+                }
+                alert(message);
+            },
+            options
+        );
+    }
+
+    suggestRegion(lat, lng, address) {
+        // Simple region suggestion based on country
+        const country = address.country_code?.toUpperCase();
+
+        const regions = {
+            'US': { name: 'United States - Select your state', geofabrik: 'north-america/us' },
+            'GB': { name: 'United Kingdom - England', geofabrik: 'europe/great-britain' },
+            'DE': { name: 'Germany', geofabrik: 'europe/germany' },
+            'FR': { name: 'France', geofabrik: 'europe/france' },
+            'IT': { name: 'Italy', geofabrik: 'europe/italy' },
+            'ES': { name: 'Spain', geofabrik: 'europe/spain' },
+            'NL': { name: 'Netherlands', geofabrik: 'europe/netherlands' },
+            'BE': { name: 'Belgium', geofabrik: 'europe/belgium' },
+            'CH': { name: 'Switzerland', geofabrik: 'europe/switzerland' },
+            'AT': { name: 'Austria', geofabrik: 'europe/austria' },
+        };
+
+        return regions[country] || { name: address.country || 'Your country', geofabrik: '' };
+    }
+
+    showUserLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const btn = document.getElementById('geolocateBtn');
+        btn.style.opacity = '0.5';
+        btn.disabled = true;
+
+        // If we have a cached position, use it immediately while we try to get a fresh one
+        if (this.lastKnownPosition) {
+            this.updateLocationMarker(this.lastKnownPosition.lat, this.lastKnownPosition.lng);
+        }
+
+        const options = {
+            enableHighAccuracy: false,  // Use network location (faster) instead of GPS
+            timeout: 5000,               // 5 second timeout (shorter, will fallback to cache)
+            maximumAge: 300000           // Accept cached position up to 5 minutes old
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Cache this position for future use
+                this.lastKnownPosition = { lat, lng };
+
+                this.updateLocationMarker(lat, lng);
+
+                btn.style.opacity = '1';
+                btn.disabled = false;
+            },
+            (error) => {
+                btn.style.opacity = '1';
+                btn.disabled = false;
+
+                // If we have a cached position, use it instead of showing an error
+                if (this.lastKnownPosition) {
+                    this.updateLocationMarker(this.lastKnownPosition.lat, this.lastKnownPosition.lng);
+                    console.log('Using cached location due to error:', error.message);
+                    return;
+                }
+
+                let message = 'Unable to get your location';
+                let suggestion = '';
+
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        message = 'Location permission denied.';
+                        suggestion = '\n\nPlease enable location access in your browser settings.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message = 'Location information unavailable.';
+                        suggestion = '\n\nThis can happen if:\n- Location services are disabled on your device\n- You\'re using a VPN\n- Your device can\'t determine location\n\nTry enabling location services in your system settings.';
+                        break;
+                    case error.TIMEOUT:
+                        message = 'Location request timed out.';
+                        suggestion = '\n\nYour device is taking too long to find your location. Try again, or check if location services are enabled.';
+                        break;
+                }
+                alert(message + suggestion);
+            },
+            options
+        );
+    }
+
+    updateLocationMarker(lat, lng) {
+        // Remove old user location marker if exists
+        if (this.userLocationMarker) {
+            this.map.removeLayer(this.userLocationMarker);
+        }
+
+        // Create a custom icon for user location
+        const userIcon = L.divIcon({
+            className: 'user-location-marker',
+            html: '<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);"></div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        // Add user location marker
+        this.userLocationMarker = L.marker([lat, lng], {
+            icon: userIcon,
+            title: 'Your Location'
+        }).addTo(this.map);
+
+        // Center map on user location
+        this.map.setView([lat, lng], 15);
     }
 
     handleMapClick(e) {

@@ -15,6 +15,18 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body class="bg-gray-100">
+    <!-- Geolocation Button - Fixed position, outside all containers -->
+    <button
+        id="geolocateBtn"
+        style="position: fixed; bottom: 100px; right: 20px; z-index: 99999; background: white; padding: 12px; border-radius: 50%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; cursor: pointer;"
+        title="Show my location"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px; color: #2563eb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+
     <div class="flex h-screen">
         <!-- Sidebar -->
         <div class="w-80 bg-white shadow-lg overflow-y-auto">
@@ -122,11 +134,22 @@
                 </div>
 
                 <!-- Saved Routes List -->
-                <div>
+                <div class="mb-6">
                     <h2 class="text-lg font-semibold mb-3">Saved Routes</h2>
                     <div id="savedRoutesList" class="space-y-2">
                         <p class="text-gray-500 text-sm">No saved routes</p>
                     </div>
+                </div>
+
+                <!-- Region Setup Helper -->
+                <div>
+                    <button
+                        id="detectRegionBtn"
+                        class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition text-sm"
+                    >
+                        📍 Setup Map Data for My Location
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2">Click to detect your region and get setup instructions</p>
                 </div>
             </div>
         </div>
@@ -134,9 +157,34 @@
         <!-- Map Container -->
         <div class="flex-1 relative">
             <div id="map" class="w-full h-full"></div>
-            <div id="loadingIndicator" class="hidden absolute top-4 right-4 bg-white px-4 py-2 rounded-md shadow-lg">
+            <div id="loadingIndicator" class="hidden absolute top-4 right-4 bg-white px-4 py-2 rounded-md shadow-lg z-10">
                 <span class="text-sm font-medium">Calculating route...</span>
             </div>
+        </div>
+
+    </div>
+
+    <!-- Region Setup Helper Modal -->
+    <div id="regionSetupModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 class="text-lg font-bold mb-4">Setup Map Data for Your Region</h3>
+            <div id="regionInfo" class="mb-4">
+                <p class="text-sm text-gray-600 mb-2">Detected location:</p>
+                <p class="font-medium" id="detectedLocation">Loading...</p>
+                <p class="text-sm text-gray-600 mt-3 mb-2">Suggested region:</p>
+                <p class="font-medium" id="suggestedRegion">Loading...</p>
+            </div>
+            <div class="bg-gray-100 p-3 rounded mb-4">
+                <p class="text-xs text-gray-600 mb-2">Run this command in your terminal:</p>
+                <code class="text-xs bg-gray-800 text-green-400 p-2 block rounded" id="setupCommand">./setup-osrm.sh</code>
+                <button id="copyCommand" class="mt-2 text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                    Copy Command
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Select the suggested region when prompted</p>
+            <button id="closeModal" class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                Close
+            </button>
         </div>
     </div>
 
@@ -144,8 +192,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Custom JS -->
-    <script src="/static/js/api.js?v=2"></script>
-    <script src="/static/js/map.js?v=2"></script>
-    <script src="/static/js/route-manager.js?v=2"></script>
+    <script src="/static/js/api.js?v=5"></script>
+    <script src="/static/js/map.js?v=5"></script>
+    <script src="/static/js/route-manager.js?v=5"></script>
 </body>
 </html>

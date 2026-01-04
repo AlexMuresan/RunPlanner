@@ -6,6 +6,17 @@
     font-family: inherit;
 }
 
+/* Ensure geolocation button is above map controls */
+#geolocateBtn {
+    z-index: 10000 !important;
+    position: fixed !important;
+    pointer-events: auto !important;
+}
+
+#regionSetupModal {
+    z-index: 99999;
+}
+
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
